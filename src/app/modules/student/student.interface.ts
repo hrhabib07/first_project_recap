@@ -1,4 +1,4 @@
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 
 export type TUserName = {
   firstName: string
@@ -24,10 +24,10 @@ export type TLocalGuardian = {
 
 export type TStudent = {
   id: string
+  user: Types.ObjectId // ref to User
   name: TUserName
-  password: string
-  gender: 'male' | 'female'
-  dateOfBirth?: string
+  gender: 'male' | 'female' | 'other'
+  dateOfBirth?: string // or Date if you prefer
   email: string
   contactNo: string
   emergencyContactNo: string
@@ -37,9 +37,17 @@ export type TStudent = {
   guardian: TGuardian
   localGuardian: TLocalGuardian
   profileImg?: string
-  isActive: 'active' | 'blocked'
   isDeleted: boolean
 }
+
+// for creating statics
 export interface StudentModel extends Model<TStudent> {
   isUserExists(id: string): Promise<TStudent | null>
 }
+
+/* If you later want instance methods instead:
+export interface StudentMethods {
+  isUserExists(id: string): Promise<TStudent | null>;
+}
+export type StudentModel = Model<TStudent, Record<string, never>, StudentMethods>;
+*/

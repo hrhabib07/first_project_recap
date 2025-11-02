@@ -1,65 +1,118 @@
+import mongoose, { Types } from 'mongoose'
 import { z } from 'zod'
 
-const GenderEnum = z.enum(['male', 'female'])
-const BloodGroupEnum = z.enum([
-  'A+',
-  'A-',
-  'B+',
-  'B-',
-  'AB+',
-  'AB-',
-  'O+',
-  'O-',
-])
-const ActiveEnum = z.enum(['active', 'blocked'])
+// ---------- Reuse from your create schema ----------
+const objectIdSchema = z
+  .union([
+    z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId'),
+    z.instanceof(mongoose.Types.ObjectId),
+  ])
+  .transform((v) => (typeof v === 'string' ? new Types.ObjectId(v) : v))
 
 const userNameSchema = z.object({
   firstName: z
     .string()
-    .min(1, 'First name is required')
+    .min(1)
     .max(20)
-    .regex(/^[A-Z]/, 'First Name must start with a capital letter'),
+    .refine((value) => /^[A-Z]/.test(value), {
+      message: 'First Name must start with a capital letter',
+    }),
   middleName: z.string().optional(),
-  lastName: z
-    .string()
-    .min(1, 'Last name is required')
-    .regex(/^[A-Za-z]+$/u, 'Last name must contain only letters'),
+  lastName: z.string().min(1).max(20),
 })
 
 const guardianSchema = z.object({
-  fatherName: z.string().min(1, 'Father name is required'),
-  fatherOccupation: z.string().min(1, 'Father occupation is required'),
-  fatherContactNo: z.string().min(1, 'Father contact number is required'),
-  motherName: z.string().min(1, 'Mother name is required'),
-  motherOccupation: z.string().min(1, 'Mother occupation is required'),
-  motherContactNo: z.string().min(1, 'Mother contact number is required'),
+  fatherName: z.string(),
+  fatherOccupation: z.string(),
+  fatherContactNo: z.string(),
+  motherName: z.string(),
+  motherOccupation: z.string(),
+  motherContactNo: z.string(),
 })
 
 const localGuardianSchema = z.object({
-  name: z.string().min(1, 'Local guardian name is required'),
-  occupation: z.string().min(1, 'Local guardian occupation is required'),
-  contactNo: z.string().min(1, 'Local guardian contact number is required'),
-  address: z.string().min(1, 'Local guardian address is required'),
+  name: z.string(),
+  occupation: z.string(),
+  contactNo: z.string(),
+  address: z.string(),
 })
 
+// ---------- Your create schema (for reference) ----------
 export const studentValidationSchema = z.object({
-  id: z.string().min(1, 'Student ID is required'),
+  id: z.string(),
+  user: objectIdSchema,
   name: userNameSchema,
-  password: z.string().min(1, 'Password is required'),
-  gender: GenderEnum,
-  bloodGroup: BloodGroupEnum.optional(), // optional in Mongoose
-  isActive: ActiveEnum.default('active'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  email: z.string().email('Email is not valid'),
-  contactNo: z.string().min(1, 'Contact number is required'),
-  emergencyContactNo: z.string().min(1, 'Emergency contact number is required'),
-  presentAddress: z.string().min(1, 'Present address is required'),
-  // Mirror the exact Mongoose key. If it's a typo there, fix both sides.
-  permanentAddress: z.string().min(1, 'Permanent address is required'),
+  gender: z.enum(['male', 'female', 'other']),
+  dateOfBirth: z.string().optional(),
+  email: z.string().email(),
+  contactNo: z.string(),
+  emergencyContactNo: z.string(),
+  bloodGroup: z
+    .enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
+    .optional(),
+  presentAddress: z.string(),
+  permanentAddress: z.string(),
   guardian: guardianSchema,
   localGuardian: localGuardianSchema,
-  profileImg: z.string().optional(), // optional in Mongoose
+  profileImg: z.string().optional(),
   isDeleted: z.boolean().default(false),
 })
-export const updateStudentZodSchema = studentValidationSchema.partial()
-export type StudentInput = z.infer<typeof studentValidationSchema>
+export type StudentCreateInput = z.output<typeof studentValidationSchema>
+
+// ---------- UPDATE (PATCH) schema ----------
+// All top-level fields optional; nested objects are partially updatable.
+export const studentUpdateSchema = z
+  .object({
+    // If you want to **allow** changing these, keep as below.
+    // If you want to **forbid** changes, see "Immutable fields" variant further down.
+    id: z.string().optional(),
+    user: objectIdSchema.optional(),
+
+    name: userNameSchema.partial().optional(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    dateOfBirth: z.string().optional(),
+    email: z.string().email().optional(),
+    contactNo: z.string().optional(),
+    emergencyContactNo: z.string().optional(),
+    bloodGroup: z
+      .enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
+      .optional(),
+    presentAddress: z.string().optional(),
+    permanentAddress: z.string().optional(),
+    guardian: guardianSchema.partial().optional(),
+    localGuardian: localGuardianSchema.partial().optional(),
+    profileImg: z.string().optional(),
+    isDeleted: z.boolean().optional(), // or omit to prevent external toggling
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided for update',
+  })
+
+export type StudentUpdateInput = z.input<typeof studentUpdateSchema>
+export type StudentUpdateOutput = z.output<typeof studentUpdateSchema>
+
+// ---------- OPTIONAL: Immutable fields variant ----------
+// If you do NOT want clients to change `id` and `user`, use this instead:
+// export const studentUpdateSchema = z
+//   .object({
+//     id: z.never({ message: "id is immutable" }).optional(),
+//     user: z.never({ message: "user is immutable" }).optional(),
+//     name: userNameSchema.partial().optional(),
+//     gender: z.enum(["male", "female", "other"]).optional(),
+//     dateOfBirth: z.string().optional(),
+//     email: z.string().email().optional(),
+//     contactNo: z.string().optional(),
+//     emergencyContactNo: z.string().optional(),
+//     bloodGroup: z
+//       .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])
+//       .optional(),
+//     presentAddress: z.string().optional(),
+//     permanentAddress: z.string().optional(),
+//     guardian: guardianSchema.partial().optional(),
+//     localGuardian: localGuardianSchema.partial().optional(),
+//     profileImg: z.string().optional(),
+//     isDeleted: z.boolean().optional(),
+//   })
+//   .refine((data) => Object.keys(data).length > 0, {
+//     message: "At least one field must be provided for update",
+//   });
