@@ -1,83 +1,77 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema, model } from 'mongoose'
 import {
   StudentModel,
   TGuardian,
-  TLocalGuardian,
+  TLevelTerm,
   TStudent,
+  TStudentStatus,
   TUserName,
 } from './student.interface'
 
-// ------------------------------
-// Subschemas
-// ------------------------------
-const userNameSchema = new Schema<TUserName>({
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true,
-    maxlength: [20, 'Name cannot be more than 20 characters'],
+const userNameSchema = new Schema<TUserName>(
+  {
+    firstName: {
+      type: String,
+      required: [true, 'First Name is required'],
+      trim: true,
+      maxlength: [20, 'First name cannot be more than 20 characters'],
+    },
+    middleName: {
+      type: String,
+      trim: true,
+      maxlength: [20, 'Middle name cannot be more than 20 characters'],
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Last Name is required'],
+      trim: true,
+      maxlength: [20, 'Last name cannot be more than 20 characters'],
+    },
+    localNameBn: {
+      type: String,
+      trim: true,
+      maxlength: [40, 'Local (Bangla) name cannot be more than 40 characters'],
+    },
   },
-  middleName: {
-    type: String,
-    trim: true,
-  },
-  lastName: {
-    type: String,
-    trim: true,
-    required: [true, 'Last name is required'],
-    maxlength: [20, 'Name cannot be more than 20 characters'],
-  },
-})
+  { _id: false },
+)
 
-const guardianSchema = new Schema<TGuardian>({
-  fatherName: {
-    type: String,
-    trim: true,
-    required: [true, 'Father name is required'],
+const guardianSchema = new Schema<TGuardian>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Guardian name is required'],
+      trim: true,
+    },
+    relation: {
+      type: String,
+      enum: ['father', 'mother', 'spouse', 'brother', 'sister', 'other'],
+      required: [true, 'Guardian relation is required'],
+    },
+    contactNo: {
+      type: String,
+      required: [true, 'Guardian contact number is required'],
+      trim: true,
+    },
   },
-  fatherOccupation: {
-    type: String,
-    trim: true,
-    required: [true, 'Father occupation is required'],
-  },
-  fatherContactNo: {
-    type: String,
-    required: [true, 'Father contact number is required'],
-  },
-  motherName: { type: String, required: [true, 'Mother name is required'] },
-  motherOccupation: {
-    type: String,
-    required: [true, 'Mother occupation is required'],
-  },
-  motherContactNo: {
-    type: String,
-    required: [true, 'Mother contact number is required'],
-  },
-})
+  { _id: false },
+)
 
-const localGuardianSchema = new Schema<TLocalGuardian>({
-  name: { type: String, required: [true, 'Local guardian name is required'] },
-  occupation: { type: String, required: [true, 'Occupation is required'] },
-  contactNo: { type: String, required: [true, 'Contact number is required'] },
-  address: { type: String, required: [true, 'Address is required'] },
-})
-
-// ------------------------------
-// Main Student Schema
-// ------------------------------
 const studentSchema = new Schema<TStudent, StudentModel>(
   {
-    id: {
+    // Identity
+    studentId: {
       type: String,
       required: [true, 'Student ID is required'],
       unique: true,
+      trim: true,
     },
     user: {
       type: Schema.Types.ObjectId,
-      required: [true, 'User ID is required'],
-      unique: true,
+      required: [true, 'User id is required'],
       ref: 'User',
+      unique: true,
+      index: true,
     },
     name: { type: userNameSchema, required: [true, 'Name is required'] },
     gender: {
@@ -89,16 +83,31 @@ const studentSchema = new Schema<TStudent, StudentModel>(
       required: [true, 'Gender is required'],
     },
     dateOfBirth: { type: Date },
-    email: {
+
+    universityEmail: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, 'University email is required'],
       unique: true,
+      lowercase: true,
+      trim: true,
     },
-    contactNo: { type: String, required: [true, 'Contact number is required'] },
-    emergencyContactNo: {
+    personalEmail: {
       type: String,
-      required: [true, 'Emergency contact number is required'],
+      lowercase: true,
+      trim: true,
     },
+
+    contactNo: {
+      type: String,
+      required: [true, 'Contact number is required'],
+      trim: true,
+    },
+
+    guardian: {
+      type: guardianSchema,
+      required: [true, 'Guardian information is required'],
+    },
+
     bloodGroup: {
       type: String,
       enum: {
@@ -106,59 +115,182 @@ const studentSchema = new Schema<TStudent, StudentModel>(
         message: '{VALUE} is not a valid blood group',
       },
     },
+
     presentAddress: {
       type: String,
       required: [true, 'Present address is required'],
+      trim: true,
     },
     permanentAddress: {
       type: String,
       required: [true, 'Permanent address is required'],
+      trim: true,
     },
-    guardian: {
-      type: guardianSchema,
-      required: [true, 'Guardian information is required'],
+    profileImg: { type: String, trim: true },
+
+    // Education History
+    sscSchool: {
+      type: String,
+      required: [true, 'SSC school is required'],
+      trim: true,
     },
-    localGuardian: {
-      type: localGuardianSchema,
-      required: [true, 'Local guardian information is required'],
+    sscYear: {
+      type: String,
+      required: [true, 'SSC year is required'],
+      trim: true,
     },
-    profileImg: { type: String },
-    isDeleted: { type: Boolean, default: false },
+    sscGPA: { type: Number, min: 0, max: 5 },
+    hscCollege: {
+      type: String,
+      required: [true, 'HSC college is required'],
+      trim: true,
+    },
+    hscYear: {
+      type: String,
+      required: [true, 'HSC year is required'],
+      trim: true,
+    },
+    hscGroup: { type: String, enum: ['Science', 'Commerce', 'Humanities'] },
+    hscGPA: { type: Number, min: 0, max: 5 },
+
+    // Academics
+    program: {
+      type: String,
+      required: [true, 'Program is required'],
+      trim: true,
+    }, // string for now
+    academicDepartment: {
+      type: String,
+      required: [true, 'Academic department is required'],
+      trim: true,
+    }, // string for now
+    admissionSemester: {
+      type: Schema.Types.ObjectId,
+      ref: 'AcademicSemester',
+      required: true,
+      index: true,
+    },
+    admissionYear: { type: Number, min: 2000, max: 2100 },
+    term: { type: String, enum: ['Spring', 'Summer', 'Fall'], required: true },
+
+    currentSemester: { type: Schema.Types.ObjectId, ref: 'AcademicSemester' },
+    currentLevelTerm: {
+      type: String,
+      enum: [
+        'L1T1',
+        'L1T2',
+        'L1T3',
+        'L2T1',
+        'L2T2',
+        'L2T3',
+        'L3T1',
+        'L3T2',
+        'L3T3',
+        'L4T1',
+        'L4T2',
+        'L4T3',
+      ] as TLevelTerm[],
+    },
+
+    batch: { type: String, required: [true, 'Batch is required'], trim: true },
+    section: { type: String, enum: ['A', 'B', 'C', 'D'], required: true },
+    shift: { type: String, enum: ['day', 'evening'] },
+    rollNo: { type: String, trim: true },
+    registrationNo: { type: String, trim: true },
+    adviser: { type: String, trim: true }, // string for now
+
+    // Performance
+    cgpa: { type: Number, required: true, min: 0, max: 4 },
+    completedCredits: { type: Number, required: true, min: 0 },
+    enrolledCredits: { type: Number, min: 0 },
+
+    // Financial
+    waiverPercent: { type: Number, min: 0, max: 100 },
+    scholarshipName: { type: String, trim: true },
+    isFinancialHold: { type: Boolean, default: false },
+
+    // Status
+    status: {
+      type: String,
+      enum: [
+        'active',
+        'probation',
+        'on_leave',
+        'graduated',
+        'expelled',
+        'suspended',
+        'dropped',
+        'alumni',
+      ] as TStudentStatus[],
+      default: 'active',
+      index: true,
+    },
+    expectedGraduation: { type: Date },
+    graduationDate: { type: Date },
+
+    // System fields
+    emailVerified: { type: Boolean, default: false },
+    phoneVerified: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   {
+    timestamps: true,
     toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 )
 
-// ------------------------------
-// Virtual
-// ------------------------------
-studentSchema.virtual('fullName').get(function () {
-  const middle = this.name.middleName ? ` ${this.name.middleName}` : ''
-  return `${this.name.firstName}${middle} ${this.name.lastName}`
+// ---------- Virtuals ----------
+studentSchema.virtual('fullName').get(function (this: TStudent) {
+  const parts = [
+    this.name?.firstName,
+    this.name?.middleName,
+    this.name?.lastName,
+  ].filter(Boolean)
+  return parts.join(' ')
 })
 
-// ------------------------------
-// Query Middleware
-// ------------------------------
-studentSchema.pre(/^find/, function (this: any, next) {
-  this.find({ isDeleted: { $ne: true } })
+// ---------- Indexes ----------
+studentSchema.index({ academicDepartment: 1, batch: 1, section: 1 })
+studentSchema.index(
+  { personalEmail: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      personalEmail: { $type: 'string' },
+      isDeleted: false,
+    },
+  },
+)
+
+// ---------- Query Middleware: soft-delete default filter ----------
+studentSchema.pre('find', function (next) {
+  this.where({ isDeleted: { $ne: true } })
   next()
 })
 
-studentSchema.pre('aggregate', function (this: any, next) {
+studentSchema.pre('findOne', function (next) {
+  this.where({ isDeleted: { $ne: true } })
+  next()
+})
+
+studentSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } })
   next()
 })
 
-// ------------------------------
-// Static Methods
-// ------------------------------
-studentSchema.statics.isUserExists = async function (id: string) {
-  return await Student.findOne({ id })
+// ---------- Statics ----------
+studentSchema.statics.isUserExists = function (studentId: string) {
+  return this.findOne({ studentId, isDeleted: false })
 }
 
-// ------------------------------
-// Model Export
-// ------------------------------
+studentSchema.statics.findByUniversityEmail = function (email: string) {
+  return this.findOne({
+    universityEmail: String(email).toLowerCase(),
+    isDeleted: false,
+  })
+}
+
 export const Student = model<TStudent, StudentModel>('Student', studentSchema)
