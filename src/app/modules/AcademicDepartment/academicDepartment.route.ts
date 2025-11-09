@@ -1,11 +1,11 @@
-import express from 'express';
-import auth from '../../middlewares/auth';
-import validateRequest from '../../middlewares/validateRequest';
-import { USER_ROLE } from '../User/user.constant';
-import { AcademicDepartmentControllers } from './academicDepartment.controller';
-import { AcademicDepartmentValidation } from './academicDepartment.validation';
+import express from 'express'
+import auth from '../../middlewares/auth'
+import validateRequest from '../../middlewares/validateRequest'
+import { USER_ROLE } from '../User/user.constant'
+import { AcademicDepartmentControllers } from './academicDepartment.controller'
+import { AcademicDepartmentValidation } from './academicDepartment.validation'
 
-const router = express.Router();
+const router = express.Router()
 
 router.post(
   '/create-academic-department',
@@ -14,7 +14,7 @@ router.post(
     AcademicDepartmentValidation.createAcademicDepartmentValidationSchema,
   ),
   AcademicDepartmentControllers.createAcademicDepartmemt,
-);
+)
 
 router.get(
   '/:departmentId',
@@ -25,7 +25,7 @@ router.get(
     USER_ROLE.student,
   ),
   AcademicDepartmentControllers.getSingleAcademicDepartment,
-);
+)
 
 router.patch(
   '/:departmentId',
@@ -34,7 +34,7 @@ router.patch(
     AcademicDepartmentValidation.updateAcademicDepartmentValidationSchema,
   ),
   AcademicDepartmentControllers.updateAcademicDeartment,
-);
+)
 
 router.get(
   '/',
@@ -45,6 +45,6 @@ router.get(
     USER_ROLE.student,
   ),
   AcademicDepartmentControllers.getAllAcademicDepartments,
-);
+)
 
-export const AcademicDepartmentRoutes = router;
+export const AcademicDepartmentRoutes = router

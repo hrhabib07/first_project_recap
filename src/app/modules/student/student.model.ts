@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 import {
   StudentModel,
   TGuardian,
@@ -293,4 +293,6 @@ studentSchema.statics.findByUniversityEmail = function (email: string) {
   })
 }
 
-export const Student = model<TStudent, StudentModel>('Student', studentSchema)
+export const Student =
+  (mongoose.models.Student as StudentModel) ||
+  mongoose.model<TStudent, StudentModel>('Student', studentSchema)

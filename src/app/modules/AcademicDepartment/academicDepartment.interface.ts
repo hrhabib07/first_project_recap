@@ -1,6 +1,14 @@
-import { Types } from 'mongoose';
+// academicDepartment.interface.ts
+import { Types } from 'mongoose'
+import type {
+  DepartmentName,
+  DepartmentShort,
+  DepartmentCode,
+} from './academicDepartment.constant'
 
 export type TAcademicDepartment = {
-  name: string;
-  academicFaculty: Types.ObjectId;
-};
+  name: DepartmentName // Example: "English"
+  shortForm: DepartmentShort // Example: "ENG"
+  departmentCode: DepartmentCode // Example: "114"
+  academicFaculty: Types.ObjectId // Reference
+}

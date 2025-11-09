@@ -1,5 +1,3 @@
-// Helper to catch async errors and pass them to Express error handler (no try-catch needed)
-
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 const catchAsync = (fn: RequestHandler) => {
